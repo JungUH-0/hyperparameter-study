@@ -1,5 +1,3 @@
-claude가 작성함
-
 # Food-11 하이퍼파라미터 실험
 
 음식 사진 분류 데이터셋 [Food-11](https://www.kaggle.com/datasets/trolukovich/food11-image-dataset)(11개 클래스, 16,643장)에서 작은 CNN을 학습시키며 **하이퍼파라미터를 한 번에 하나씩 바꿨을 때 성능이 얼마나 달라지는지** 재는 실험이다.
