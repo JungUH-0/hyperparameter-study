@@ -91,4 +91,4 @@
 
 ## 다음
 
-후보 4개(Adam 1e-4·1e-3, SGD + momentum 1e-3, SGD 1e-2)에 시드 1·2를 더해 3시드로 확인한다. 노트북은 [`colab_v2/step2_lr_seeds.ipynb`](../colab_v2/step2_lr_seeds.ipynb)에 준비되어 있고, 결과가 나오면 이 폴더에 `step2_lr_seeds.md`로 추가한다.
+후보 4개(Adam 1e-4·1e-3, SGD + momentum 1e-3, SGD 1e-2)에 시드 1·2를 더해 3시드로 확인했다. 노트북은 [`colab_v2/step2_lr_seeds.ipynb`](../colab_v2/step2_lr_seeds.ipynb)이고, 결과는 [`step2_lr_seeds.md`](step2_lr_seeds.md)에 있다. 결론은 Adam 기준선 1e-3 유지, Adam ≈ SGD + momentum > SGD다.
