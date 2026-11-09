@@ -10,18 +10,21 @@
 
 ## 지금까지의 결론
 
-2026-11-02 기준이며 아직 진행 중인 실험이다.
+2026-11-09 기준이며 아직 진행 중인 실험이다.
 
 1. **He 초기화는 학습 속도만 바꿨고 일반화는 바꾸지 못했다.** 시드 3개로 확인했을 때 val·test 정확도의 변화는 시드 사이의 흔들림 안에 있었다.
 2. **최적 학습률은 옵티마이저마다 10배씩 달랐다.** Adam 1e-4, SGD+momentum 1e-3, SGD 1e-2였고 두 프레임워크가 똑같이 나왔다 (시드 0으로 한 번씩 훑어본 결과).
-3. **정확도의 병목은 학습 속도가 아니라 과적합으로 보인다 (가설).** 잘 학습되는 설정의 val 정확도는 38~43%에 모이는데 train 정확도는 그보다 훨씬 높다 (예: Keras · Adam 1e-3은 train 77.6%, val 41.5%). Dropout 비율과 데이터 증강 같은 정규화가 다음 후보다.
-4. **학습률 단계의 3시드 확인은 결과를 기다리는 중이다.** 노트북은 준비되어 있다.
+3. **정확도의 병목은 학습 속도가 아니라 과적합이다.** 잘 학습되는 설정의 val 정확도는 39~42%(3시드 평균)에 모이는데 train 정확도는 그보다 훨씬 높다 (예: Keras · Adam 1e-3은 train 75.4%, val 39.3%). 에폭을 30까지 늘려도 val 정확도는 평평하고 train 대 val 격차만 55%p까지 벌어졌다 (4단계).
+4. **학습률 단계는 3시드 확인으로 끝났고 Adam 기준선은 1e-3을 유지한다.** 미리 정한 규칙(4칸 전부에서 뚜렷하게 앞설 때만 이동)에서 1e-4는 1칸(PyTorch val loss 최저)만 앞섰고 val 정확도는 구분되지 않았다. 옵티마이저는 Adam과 SGD + momentum이 구분되지 않고, SGD가 둘보다 val 정확도가 5~8%p 낮다.
+5. **Dropout은 0.5를 유지한다 (3단계).** 후보 0.75는 3시드 확인에서 4칸 중 2칸만 뚜렷했다. 다만 이 결론은 증강이 없고 5에폭으로 고정한 조건에서 나왔다.
+6. **5에폭은 짧지 않았다 (4단계).** val loss 바닥이 2~3에폭이고 그 뒤로는 오르기만 한다. 대신 이후 단계가 공정하게 비교되도록 **얼리스탑(상한 30 · val loss · patience 5)을 학습 방식으로 채택했다.** 정확도를 올리려는 게 아니다.
+7. **증강 rotation(±20°)이 4칸 전부에서 뚜렷하게 앞서 기준선에 들어갔다 (5단계).** val 정확도가 Keras 40.6 → 49.4%, PyTorch 37.6 → 48.5%로 올랐다 (+8.8, +10.9%p, 시드 3개 전부 같은 방향). rotation은 과적합이 시작되는 시점을 2~3에폭에서 11~12에폭으로 밀었다. flip과 zoom은 시드 0에서 PyTorch에서만 효과가 있었다.
 
 ---
 
 ## 진행 상황
 
-실행 1번은 Keras 약 2.5분, PyTorch 약 4.5분이다 (T4 기준). 노트북은 실행 출력이 비어 있고, 결과는 아래 "결과"에 요약했다. 전체 표와 새로 나오는 결과는 [`results/`](results/)에 모은다.
+5에폭 고정 실행 1번은 Keras 약 2.5분, PyTorch 약 4.5분이다 (T4 기준). 5단계부터는 얼리스탑이라 실행마다 멈추는 에폭이 달라서 시간도 다르다 (어림으로 Keras 4~8분, PyTorch 8~20분). 노트북은 실행 출력이 비어 있고, 결과는 아래 "결과"에 요약했다. 전체 표와 새로 나오는 결과는 [`results/`](results/)에 모은다.
 
 | 단계 | 노트북 | 내용 | 상태 | Colab |
 |---|---|---|---|---|
@@ -29,14 +32,18 @@
 | 1단계 | [`step1_he_init.ipynb`](colab_v2/step1_he_init.ipynb) | He 초기화 하나만 변경 | 완료 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/step1_he_init.ipynb) |
 | 시드 반복 | [`seed_repeat.ipynb`](colab_v2/seed_repeat.ipynb) | 0·1단계 × 두 프레임워크 × 시드 0·1·2 (12번, 약 45분) | 완료 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/seed_repeat.ipynb) |
 | 2단계 | [`step2_learning_rate.ipynb`](colab_v2/step2_learning_rate.ipynb) | 옵티마이저 3개 × 학습률 4개(1e-4~1e-1), 시드 0, 두 프레임워크 (24번, 약 84분) | 완료 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/step2_learning_rate.ipynb) |
-| 2단계 마무리 | [`step2_lr_seeds.ipynb`](colab_v2/step2_lr_seeds.ipynb) | 후보 4개 × 시드 1·2 (시드 0은 위 결과를 재사용, 16번, 약 56분). 학습률 결론과 옵티마이저 비교 | 노트북 준비됨, 결과 대기 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/step2_lr_seeds.ipynb) |
-| 다음 | — | 옵티마이저 비교, 정규화(Dropout 비율·데이터 증강), (선택) 구조·배치 크기 | 예정 | — |
+| 2단계 마무리 | [`step2_lr_seeds.ipynb`](colab_v2/step2_lr_seeds.ipynb) | 후보 4개 × 시드 1·2 (시드 0은 위 결과를 재사용, 16번, 약 56분). 학습률 결론과 옵티마이저 비교 | 완료 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/step2_lr_seeds.ipynb) |
+| 3단계 | [`step3_dropout.ipynb`](colab_v2/step3_dropout.ipynb) | Dropout 비율 0.0 · 0.25 · 0.5 · 0.75 · 0.9, 시드 0 (10번, 약 35분). 0.5 대 0.75는 시드 1·2를 더해 3시드로 확인 (8번) | 완료 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/step3_dropout.ipynb) |
+| 4단계 | [`step4_epochs.ipynb`](colab_v2/step4_epochs.ipynb) | 에폭 수 5 → 30, 시드 0 (2번, 약 45분). 결과로 얼리스탑을 학습 방식으로 채택 | 완료 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/step4_epochs.ipynb) |
+| 5단계 | [`step5_augmentation.ipynb`](colab_v2/step5_augmentation.ipynb) | 얼리스탑 아래에서 증강 none · flip · rotation · zoom, 시드 0 (8번, 약 75분). none 대 rotation은 시드 1·2를 더해 3시드로 확인 (8번) | 완료 | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/JungUH-0/hyperparameter-study/blob/main/colab_v2/step5_augmentation.ipynb) |
+| 다음 | — | rotation 기준선에서 Dropout 0.5 대 0.75를 얼리스탑 아래에서 다시 확인, 증강 세 가지를 전부 켠 쪽(v1 방식)과 rotation 비교 | 진행 중 | — |
 
 ---
 
 ## 방법
 
-- **기준선**: 2 Conv(32·64) + Dropout 0.5 + Dense(11). 입력 128×128, batch 32, 5 epoch, 증강 없음, Adam lr 1e-3. 0단계에서 두 프레임워크의 파라미터 수가 같은지(653,003개) 먼저 확인한다. 1단계에서 He 초기화를 적용해 보고, 이후 튜닝은 He를 기준선으로 쓴다.
+- **기준선**: 2 Conv(32·64) + Dropout 0.5 + Dense(11). 입력 128×128, batch 32, 5 epoch, 증강 없음, Adam lr 1e-3. 0단계에서 두 프레임워크의 파라미터 수가 같은지(653,003개) 먼저 확인한다. 1단계에서 He 초기화를 적용해 보고, 이후 튜닝은 He를 기준선으로 쓴다. 5단계에서 증강 rotation(±20°)이 기준선에 들어갔고, 학습 방식도 아래 얼리스탑으로 바뀌었다.
+- **얼리스탑은 5단계부터 건다.** 상한 30에폭, val loss 감시, patience 5(최저를 갱신하지 못한 에폭이 5번 쌓이면 멈춤), 멈추면 val loss가 가장 낮았던 에폭의 가중치로 복원한다. 기준선과 후보 모두에 똑같이 건다. 정확도를 올리려는 게 아니라 증강처럼 학습이 느린 설정이 5에폭에서 잘려 불리해지지 않게 하려는 것이다 ([근거](results/step4_epochs.md)). 앞 단계(He · 학습률 · Dropout)의 결과는 5에폭 기준으로 그대로 둔다.
 - **한 번에 하나만 바꾼다.** 기준선에서 하나만 바꿔 기준선과 비교하고, 앞 단계 결과 위에 쌓지 않는다.
 - **시드 0·1·2로 반복한다.** 같은 시드끼리 뺀 값이 시드 전부에서 같은 방향이고 평균 차이가 시드 범위보다 클 때만 "뚜렷한 효과"로 읽는다.
 - **옵티마이저마다 학습률을 따로 찾는다.** 적정 학습률은 옵티마이저마다 자릿수가 다르다.
@@ -123,8 +130,79 @@ v1은 "이 하이퍼파라미터를 바꿨더니 이런 효과가 났다"고 말
 
 - **최적 학습률은 옵티마이저마다 10배씩 달랐고 두 프레임워크가 똑같았다.** v1처럼 전부 1e-3으로 두면 맞지 않는다.
 - **무너진 실행은 NaN이 아니라 입력과 무관하게 한 클래스만 내놓는 상태다** (val 정확도 14.6%, val loss 2.30에 붙는다).
-- **최적 근처는 평평하다.** Adam 1e-4와 1e-3의 val 정확도 차이(1.6~2.2%p)는 같은 설정을 다시 돌렸을 때의 흔들림과 같은 크기라서, 시드 1개로는 우열을 가릴 수 없다. 이를 3시드로 확인하는 노트북(`step2_lr_seeds.ipynb`)이 준비되어 있고, 결과를 보기 전에 판정 규칙을 노트북 안에 적어 두었다.
+- **최적 근처는 평평하다.** Adam 1e-4와 1e-3의 val 정확도 차이(1.6~2.2%p)는 같은 설정을 다시 돌렸을 때의 흔들림과 같은 크기라서, 시드 1개로는 우열을 가릴 수 없었다. 그래서 3시드로 다시 확인했다 (아래).
 - 최저 에폭이 5(5에폭이 끝날 때도 val loss가 내려가는 중)인 설정이 많아서, 위 최적 학습률은 "5에폭 기준"이다.
+
+### v2 — 학습률 3시드 확인 (2단계 마무리)
+
+시드 0 훑어보기에서 고른 후보 4개에 시드 1·2를 더해 3시드로 확인했다 (프레임워크마다 8번 추가, 합쳐 16번). 전체 결과표와 판정은 [`results/step2_lr_seeds.md`](results/step2_lr_seeds.md)에 있다. 5에폭 끝 값의 3시드 평균이고 단위는 %다.
+
+| 후보 | val acc (Keras / PyTorch) | val loss 최저 (Keras / PyTorch) | train − val 격차 (Keras / PyTorch) |
+|---|---|---|---|
+| Adam 1e-4 | 41.9 / 41.7 | 1.67 / 1.68 | 16.5 / 13.1 |
+| Adam 1e-3 (기준선) | 39.3 / 40.8 | 1.74 / 1.78 | 36.1 / 26.4 |
+| SGD + momentum 1e-3 | 40.9 / 40.2 | 1.69 / 1.71 | 13.7 / 9.1 |
+| SGD 1e-2 | 33.5 / 35.0 | 1.80 / 1.84 | 18.1 / 11.5 |
+
+- **Adam 기준선은 1e-3을 유지한다.** 미리 정한 규칙은 val acc·val loss 최저, 두 프레임워크의 4칸 전부에서 1e-4가 뚜렷하게 앞설 때만 옮기는 것이다. 1e-4는 PyTorch val loss 최저 한 칸만 앞섰다 (−0.10, 시드 범위 0.03). val 정확도는 시드 범위 안이었다 (Keras +2.6%p, PyTorch +0.9%p).
+- **1e-4는 val loss 바닥이 낮지만 정확도는 같다.** test 정확도는 PyTorch에서 43.4% 대 43.4%, Keras에서 43.9% 대 43.0%다. 1e-3은 과적합이 일찍 시작해서(최저 에폭 2.3) 바닥이 얕을 뿐 일반화 성능은 잃지 않는다.
+- **Adam과 SGD + momentum은 구분되지 않고, SGD는 둘보다 val 정확도가 5~8%p 낮다** (두 프레임워크 모두 뚜렷함).
+
+### v2 — Dropout 비율 (3단계)
+
+시드 0으로 비율 5개(0.0 · 0.25 · 0.5 · 0.75 · 0.9)를 훑고, 4칸이 전부 기준선보다 유리했던 0.75만 시드 3개로 확인했다 (5에폭 고정, 증강 없음). 전체 표와 판정은 [`results/step3_dropout.md`](results/step3_dropout.md)에 있다. 5에폭 끝의 3시드 평균이고 단위는 %다.
+
+| Dropout | val acc (Keras / PyTorch) | val loss 최저 (Keras / PyTorch) | train − val 격차 (Keras / PyTorch) |
+|---|---|---|---|
+| 0.5 (기준선) | 39.6 / 40.8 | 1.75 / 1.79 | 36.2 / 26.7 |
+| 0.75 | 43.2 / 42.9 | 1.68 / 1.69 | 18.5 / 11.6 |
+
+- **Dropout 0.5를 유지한다.** 규칙(4칸 전부에서 뚜렷하게 앞설 때만 이동)에서 0.75는 2칸(Keras val acc, PyTorch val loss 최저)만 앞섰고 나머지 2칸은 구분되지 않았다. Keras val loss는 평균 차이 0.070이 시드 범위 0.077에 근소 미달이고, PyTorch val acc는 시드 하나가 반대로 나왔다.
+- 비율을 올릴수록 train이 내려가고 train 대 val 격차가 줄어든다 (시드 0, Keras 격차 51.1%p → −0.2%p, 비율 0.0 → 0.9). 0.75가 낫다는 방향은 일관되지만 시드 범위에 걸린다.
+- PyTorch 0.75는 시드 3개 중 2개에서 5에폭이 끝날 때도 val loss가 내려가는 중이었다. 5에폭 고정의 한계가 섞여 있어서 다음 단계에서 에폭 수를 따로 봤다.
+
+### v2 — 에폭 수와 얼리스탑 (4단계)
+
+에폭 수를 5에서 30으로 늘리고 시드 0 한 번의 곡선에서 3 · 5 · 10 · 20 · 30에폭 끝의 값을 비교했다 (Dropout 0.5, 증강 없음). 전체 표와 얼리스탑 시뮬레이션은 [`results/step4_epochs.md`](results/step4_epochs.md)에 있다.
+
+| 에폭 수 | val acc (Keras / PyTorch) | val loss (Keras / PyTorch) | train − val 격차 (Keras / PyTorch) |
+|---|---|---|---|
+| 3 | 39.4 / 38.3 | 1.82 / 1.80 | 18.0 / 9.4 |
+| 5 (기준선) | 41.9 / 39.8 | 2.07 / 2.01 | 35.5 / 27.5 |
+| 10 | 42.4 / 40.4 | 2.83 / 2.63 | 50.0 / 47.7 |
+| 20 | 41.0 / 39.3 | 3.51 / 3.55 | 55.4 / 55.6 |
+| 30 | 42.8 / 41.5 | 3.93 / 4.10 | 54.8 / 55.4 |
+
+<img src="results/figures/epochs_curves.png" width="720" alt="30에폭 학습 곡선: train 정확도는 97%까지 오르고 val 정확도는 평평하며 val loss는 2~3에폭 뒤로 오르기만 한다">
+
+- **5에폭을 유지한다.** 4칸이 전부 5에폭보다 유리한 후보가 없었다. train 정확도는 30에폭에 97%까지 오르는데 val 정확도는 3~30에폭에서 평평하다 (Keras 39.4~42.8%, PyTorch 38.3~41.5%). val loss는 2~3에폭(Keras 1.70, PyTorch 1.80)에서 바닥을 찍고 그 뒤로 오르기만 한다.
+- **얼리스탑은 성능이 아니라 공정한 비교를 위해 채택했다.** 이 곡선에 얼리스탑을 돌려 보면 val loss 감시는 patience와 상관없이 Keras 2에폭, PyTorch 3에폭을 돌려주고, 그 모델의 val 정확도는 5에폭 기준선보다 낮다 (−1.0, −1.5%p). 정확도 이득은 없다. 다만 이후 단계(증강처럼 학습이 느린 설정)를 5에폭에서 자르면 불리해지므로 5단계부터 기준선과 후보 모두에 얼리스탑을 건다.
+
+### v2 — 데이터 증강 (5단계)
+
+얼리스탑 아래에서 증강을 하나씩 켰다. 시드 0으로 flip · rotation(±20°) · zoom(최대 1.25배)을 훑고, 4칸이 전부 none보다 유리했던 rotation만 시드 3개로 확인했다. 두 프레임워크의 증강은 종류 · 범위 · 보간 · 채움을 맞췄다 (v1은 ±36° 대 ±10°였다). 전체 표와 판정은 [`results/step5_augmentation.md`](results/step5_augmentation.md)에 있다. 얼리스탑이 돌려준 모델의 값이고 단위는 %다.
+
+시드 0 훑어보기:
+
+| 증강 | val acc (Keras / PyTorch) | val loss 최저 (Keras / PyTorch) | 최저 에폭 (Keras / PyTorch) |
+|---|---|---|---|
+| none (기준선) | 41.0 / 38.5 | 1.70 / 1.80 | 2 / 3 |
+| flip | 39.9 / 43.7 | 1.68 / 1.69 | 2 / 6 |
+| rotation | 49.4 / 49.5 | 1.57 / 1.54 | 8 / 17 |
+| zoom | 39.9 / 43.1 | 1.78 / 1.78 | 2 / 7 |
+
+3시드 확인 (none 대 rotation, 평균):
+
+| 증강 | val acc (Keras / PyTorch) | val loss 최저 (Keras / PyTorch) | 최저 에폭 (Keras / PyTorch) | test acc (Keras / PyTorch) |
+|---|---|---|---|---|
+| none (기준선) | 40.6 / 37.6 | 1.73 / 1.80 | 2.3 / 2.3 | 43.0 / 38.9 |
+| rotation | 49.4 / 48.5 | 1.57 / 1.56 | 11.3 / 12.0 | 51.5 / 51.0 |
+
+<img src="results/figures/aug_3seed_curves.png" width="720" alt="none과 rotation의 학습 곡선: none은 2~3에폭에서 val loss가 오르기 시작하고 rotation은 11~12에폭까지 내려간다">
+
+- **rotation을 기준선에 넣는다.** 4칸(val acc · val loss 최저 × 두 프레임워크) 전부에서 시드 3개가 같은 방향이고 평균 차이가 시드 범위보다 컸다 (val acc +8.8, +10.9%p, val loss −0.165, −0.233). 4칸 모두 rotation의 가장 나쁜 시드가 none의 가장 좋은 시드보다 낫다.
+- **rotation은 과적합이 시작되는 시점을 2~3에폭에서 11~12에폭으로 밀었다.** train 대 val 격차는 구분될 만큼 줄지 않았다. 되돌려진 모델의 에폭이 달라서 단순 비교가 안 되고, 증강 없이 잰 train 정확도도 같이 올랐다. 과적합이 시작되기 전까지 더 오래 배운 것으로 읽는다.
+- **flip과 zoom은 시드 0에서 PyTorch에서만 효과가 있었다** (val acc +5.2, +4.6%p). Keras에서는 효과가 없었는데, val loss를 감시하는 얼리스탑이 바닥인 2에폭을 돌려줘서 효과가 가려졌을 수 있다. 3시드로 확인하지 않았고 결론으로 쓰지 않는다.
 
 ---
 
@@ -144,10 +222,13 @@ v1은 "이 하이퍼파라미터를 바꿨더니 이런 효과가 났다"고 말
 │   ├─ seed_repeat.ipynb         시드 반복
 │   ├─ step2_learning_rate.ipynb 2단계
 │   ├─ step2_lr_seeds.ipynb      2단계 마무리 (3시드 확인)
+│   ├─ step3_dropout.ipynb       3단계 Dropout 비율
+│   ├─ step4_epochs.ipynb        4단계 에폭 수 (얼리스탑 채택의 근거)
+│   ├─ step5_augmentation.ipynb  5단계 증강 (얼리스탑 아래)
 │   ├─ curve_v2_*.png            0·1단계 학습 곡선
 │   ├─ README.md                 v2 설계 문서 (처음 계획한 Phase 1~4)
 │   └─ common.py, phases.py      설계 단계에서 만든 하네스 (아직 실행해 본 적 없다)
-├─ results/                      단계별 결과 문서 (학습률 24번 전체 표 등, 새 결과는 여기에 추가)
+├─ results/                      단계별 결과 문서와 그래프 (figures/), 새 결과는 여기에 추가
 └─ curves/                       v1 학습 곡선 (orig/ = 라벨을 고치기 전 원본)
 ```
 
@@ -160,7 +241,7 @@ v1은 "이 하이퍼파라미터를 바꿨더니 이런 효과가 났다"고 말
 1. Kaggle에서 Food-11을 받아 Google Drive의 `MyDrive/food11`에 올린다. 안에 `training`, `validation`, `evaluation` 폴더가 있어야 한다.
 2. 위 표의 Colab 배지로 노트북을 열고 런타임을 GPU로 바꾼다.
 3. 위에서부터 셀을 차례로 실행한다. 모든 노트북의 데이터 셀이 Drive를 마운트하고 데이터를 `/content/food11`로 복사한다. Drive에서 직접 읽으면 학습이 수십 배 느려지므로 반드시 복사해서 쓴다. 런타임이 끊기면 다시 복사해야 한다.
-4. `seed_repeat`과 `step2_*` 노트북은 실행이 하나 끝날 때마다 Drive의 CSV(`food11_v2_seeds.csv`, `food11_v2_lr.csv`)에 한 줄씩 저장한다. 런타임이 끊겨도 앞선 결과는 남고, 다시 돌리면 끝난 실행은 건너뛰고 이어서 한다.
+4. `seed_repeat`과 `step2_*`~`step5_*` 노트북은 실행이 하나 끝날 때마다 Drive의 CSV(`food11_v2_seeds.csv`, `food11_v2_lr.csv`, `food11_v2_dropout.csv`, `food11_v2_epochs.csv`, `food11_v2_aug.csv`)에 한 줄씩 저장한다. 런타임이 끊겨도 앞선 결과는 남고, 다시 돌리면 끝난 실행은 건너뛰고 이어서 한다. 4단계와 5단계는 앞 단계 CSV가 같은 Drive에 있으면 기준선 재현 확인을 같이 보여 준다.
 5. 이 노트북들의 마지막 셀이 결과표와 그래프를 만든다.
 
 v1은 `colab_final/`의 스크립트를 셀에 붙여넣어 하나씩 실행한다 (`DATA_DIR = "/content/food11"`). 무료 Colab은 GPU 할당량이 떨어지면 몇 시간 기다려야 한다.
@@ -169,9 +250,11 @@ v1은 `colab_final/`의 스크립트를 셀에 붙여넣어 하나씩 실행한�
 
 ## 한계
 
-- **5에폭 고정이다.** 학습률처럼 에폭 수와 얽힌 결과는 더 길게 돌리면 달라질 수 있다.
+- **He · 학습률 · Dropout(3단계)의 결과는 5에폭 기준이다.** 5단계부터는 얼리스탑(상한 30에폭)이라, rotation처럼 학습이 11~17에폭까지 이어지는 설정에서는 알맞은 Dropout 값과 학습률이 달라질 수 있다. Dropout은 rotation 기준선에서 다시 확인하고 있고, 학습률은 다시 보지 않았다 (Adam 1e-4는 격자 끝이다).
 - **시드 3개로 가려낼 수 있는 효과는 대략 3~4%p 이상이다.** 같은 설정을 같은 시드로 다시 돌려도 GPU 비결정성 때문에 정확도가 최대 약 1.5%p 흔들린다.
 - **하나씩 바꾸는 순차 튜닝이라 설정끼리의 상호작용은 못 본다.** 예를 들어 정규화를 넣으면 최적 학습률이 달라질 수 있다.
+- **증강은 강도를 한 값(회전 ±20°, 확대 1.25배)만 봤고, flip과 zoom은 시드 0 관찰뿐이다.** val loss를 감시하는 얼리스탑은 val loss가 일찍 바닥인데 정확도는 계속 오르는 설정의 효과를 가릴 수 있다 (Keras의 flip · zoom에서 그런 모습이 보였다).
+- **구조(Conv 층 수 · 필터), 배치 크기, 입력 해상도, 커널 크기는 건드리지 않았다.**
 - **프레임워크 사이에 남은 차이가 있다.** 이미지 축소 방식과 데이터를 섞는 방식이 다르고, 통일은 He 초기화까지만 했다. 목적이 두 프레임워크 비교가 아니라서, 튜닝 효과의 방향이 두 프레임워크에서 다르게 나올 때만 원인 후보로 본다.
 
 ---

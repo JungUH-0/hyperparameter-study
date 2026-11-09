@@ -5,9 +5,12 @@
 | 단계 | 문서 | 상태 |
 |---|---|---|
 | 2단계 학습률 — 시드 0 훑어보기 (24번) | [step2_learning_rate_seed0.md](step2_learning_rate_seed0.md) | 완료 |
-| 2단계 마무리 — 후보 4개 3시드 확인 (16번) | `step2_lr_seeds.md` | 결과 대기 |
+| 2단계 마무리 — 후보 4개 3시드 확인 (16번) | [step2_lr_seeds.md](step2_lr_seeds.md) | 완료 |
+| 3단계 Dropout — 시드 0 훑어보기 10번 + 0.5 대 0.75 3시드 확인 8번 | [step3_dropout.md](step3_dropout.md) | 완료 |
+| 4단계 에폭 수 (30에폭, 시드 0)와 얼리스탑 채택 | [step4_epochs.md](step4_epochs.md) | 완료 |
+| 5단계 증강 — 시드 0 훑어보기 8번 + none 대 rotation 3시드 확인 8번 | [step5_augmentation.md](step5_augmentation.md) | 완료 |
 
-0·1단계와 시드 반복의 결과는 루트 README의 "결과"에 있다.
+0·1단계와 시드 반복의 결과는 루트 README의 "결과"에 있다. 6단계(rotation 기준선에서 Dropout 재확인)와 7단계(증강 세 가지를 전부 켠 쪽 대 rotation)는 결과가 나오면 이어서 추가한다.
 
 ---
 
